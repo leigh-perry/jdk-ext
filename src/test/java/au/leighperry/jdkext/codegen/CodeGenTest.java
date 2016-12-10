@@ -112,9 +112,9 @@ public class CodeGenTest {
             assertAll(
                 () -> assertEquals(
                     "    final List eArrayList0 = new ArrayList();" +
-                        "    eArrayList0.add(test.CodeGenTest.TestEnum.A);" +
-                        "    eArrayList0.add(test.CodeGenTest.TestEnum.B);" +
-                        "    eArrayList0.add(test.CodeGenTest.TestEnum.C);",
+                        "    eArrayList0.add(au.leighperry.jdkext.codegen.CodeGenTest.TestEnum.A);" +
+                        "    eArrayList0.add(au.leighperry.jdkext.codegen.CodeGenTest.TestEnum.B);" +
+                        "    eArrayList0.add(au.leighperry.jdkext.codegen.CodeGenTest.TestEnum.C);",
                     code.v1.collect(Collectors.joining())
                 ),
                 () -> assertEquals("eArrayList0", code.v2)
@@ -187,7 +187,7 @@ public class CodeGenTest {
             final Tuple2<Seq<String>, String> code = CodeGen.getPreambleAndExpression(Pair.of(1234, "string0"));
             assertAll(
                 () -> assertEquals(
-                    "    final test.CodeGenTest.Pair ePair0 = new test.CodeGenTest.Pair();" +
+                    "    final au.leighperry.jdkext.codegen.CodeGenTest.Pair ePair0 = new au.leighperry.jdkext.codegen.CodeGenTest.Pair();" +
                         "    ePair0.setT0(1234);" +
                         "    ePair0.setT1(\"string0\");",
                     code.v1.collect(Collectors.joining())
@@ -210,9 +210,9 @@ public class CodeGenTest {
                 );
             assertAll(
                 () -> assertEquals(
-                    "    final test.CodeGenTest.Pair ePair0 = new test.CodeGenTest.Pair();" +
-                        "    final test.CodeGenTest.Pair ePair1 = new test.CodeGenTest.Pair();" +
-                        "    final test.CodeGenTest.Pair ePair2 = new test.CodeGenTest.Pair();" +
+                    "    final au.leighperry.jdkext.codegen.CodeGenTest.Pair ePair0 = new au.leighperry.jdkext.codegen.CodeGenTest.Pair();" +
+                        "    final au.leighperry.jdkext.codegen.CodeGenTest.Pair ePair1 = new au.leighperry.jdkext.codegen.CodeGenTest.Pair();" +
+                        "    final au.leighperry.jdkext.codegen.CodeGenTest.Pair ePair2 = new au.leighperry.jdkext.codegen.CodeGenTest.Pair();" +
                         "    ePair2.setT0(1234);" +
                         "    ePair2.setT1(\"string0\");" +
                         "    ePair1.setT0(ePair2);" +
