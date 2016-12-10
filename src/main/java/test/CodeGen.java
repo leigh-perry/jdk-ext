@@ -27,6 +27,14 @@ public class CodeGen {
         objectId.set(0);
     }
 
+    /**
+     * Reflectively write java code to generate an instance of an object
+     *
+     * @param o the object of code generation
+     * @return (initialisation-code, expression). For simple expressions initialisation-code is an
+     * empty stream and expression contains the expression itself. For complex expressions initialisation-code
+     * is a stream of instantiation code and expression contains the nested variable.
+     */
     public static Tuple2<Seq<String>, String> getPreambleAndExpression(final Object o) {
         if (o == null) {
             return tuple(Seq.empty(), null);
