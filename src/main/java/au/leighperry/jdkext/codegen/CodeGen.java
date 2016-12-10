@@ -1,4 +1,4 @@
-package test;
+package au.leighperry.jdkext.codegen;
 
 import org.jooq.lambda.Seq;
 import org.jooq.lambda.Unchecked;
