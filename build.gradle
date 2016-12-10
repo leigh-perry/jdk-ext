@@ -1,0 +1,16 @@
+apply plugin: 'java'
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'   // defaults to sourceCompatibility
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.jooq:jool:+'
+
+    testCompile 'org.junit.jupiter:junit-jupiter-engine:+'
+    //testCompile 'junit:junit:+'
+}
+
