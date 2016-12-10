@@ -14,9 +14,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
-import static org.jooq.lambda.Seq.of;
 import static org.jooq.lambda.Seq.seq;
 import static org.jooq.lambda.tuple.Tuple.tuple;
 
@@ -85,13 +83,11 @@ public class CodeGen {
 
         // TODO other collections
 
-        // Handle generic object fields; tuple is (field-name, value, type)
-        final List<Tuple3<String, Object, ? extends Class<?>>> properties = getProperties(o);
-
         final Seq<String> preamble =
-            seq(properties)
+            getProperties(o)   // handle generic object fields via reflection
                 .flatMap(
                     p -> {
+                        // tuple is (field-name, value, type)
                         // preamble code for each object field plus setting the value via setter
                         final String fieldName = p.v1;
                         final Tuple2<Seq<String>, String> preambleAndExpression = getPreambleAndExpression(p.v2);
@@ -138,14 +134,13 @@ public class CodeGen {
     }
 
     // Tuple is (field-name, value, type)
-    private static List<Tuple3<String, Object, ? extends Class<?>>> getProperties(final Object source) {
+    private static Seq<? extends Tuple3<String, Object, ? extends Class<?>>> getProperties(final Object source) {
         try {
             final PropertyDescriptor[] sourceProperties = Introspector.getBeanInfo(source.getClass()).getPropertyDescriptors();
 
-            return of(sourceProperties)
+            return Seq.of(sourceProperties)
                 .map(Unchecked.function(sp -> isReadWrite(source, sp)))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .filter(Objects::nonNull);
         } catch (final IntrospectionException e) {
             throw new RuntimeException(e);
         }
