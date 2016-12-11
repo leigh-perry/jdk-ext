@@ -12,6 +12,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -61,7 +62,8 @@ public class CodeGen {
         }
 
         final String objectVariableName = getObjectVariableName(o);
-        if (List.class.isAssignableFrom(type)) {
+
+        if (o instanceof List) {
             final List<?> listObject = (List<?>) o;
 
             final String listInstantiation = String.format("    final List %s = new ArrayList();", objectVariableName);
@@ -81,10 +83,42 @@ public class CodeGen {
             return tuple(listInitialisation, objectVariableName);
         }
 
+        if (o instanceof Map) {
+            final Map<?, ?> mapObject = (Map<?, ?>) o;
+
+            final String mapKeyInstantiation = String.format("    final Map %s = new HashMap();", objectVariableName);
+
+            // Generate the code for each item in the map
+            final Seq<String> mapKeyInitialisation =
+                seq(mapObject)
+                    .flatMap(
+                        entry -> {
+                            final Tuple2<Seq<String>, String> preambleAndExpressionKey = getPreambleAndExpression(entry.v1);
+                            final Tuple2<Seq<String>, String> preambleAndExpressionValue = getPreambleAndExpression(entry.v2);
+
+                            // preamble code for each mapKey item plus adding to the generated mapKey
+                            return seq(preambleAndExpressionKey.v1)
+                                .append(preambleAndExpressionValue.v1)
+                                .append(
+                                    String.format(
+                                        "    %s.put(%s, %s);",
+                                        objectVariableName,
+                                        preambleAndExpressionKey.v2,
+                                        preambleAndExpressionValue.v2
+                                    )
+                                );
+                        }
+                    )
+                    .prepend(mapKeyInstantiation);
+
+            return tuple(mapKeyInitialisation, objectVariableName);
+        }
+
         // TODO other collections
 
+        // Handle generic object fields via reflection
         final Seq<String> preamble =
-            getProperties(o)   // handle generic object fields via reflection
+            getProperties(o)
                 .flatMap(
                     p -> {
                         // tuple is (field-name, value, type)
@@ -104,6 +138,7 @@ public class CodeGen {
                     }
                 )
                 .prepend(String.format("    final %s %s = new %s();", typeName, objectVariableName, typeName));
+
         return tuple(preamble, objectVariableName);
     }
 

@@ -9,6 +9,11 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -147,9 +152,68 @@ public class CodeGenTest {
                 () -> assertEquals("eArrayList0", code.v2)
             );
         }
+
+        @Test
+        public void getPreambleAndExpression_map_string() {
+            final Map<String, String> map = new HashMap<>();
+            map.put("a", "aa");
+            map.put("b", "bb");
+            map.put("c", "cc");
+
+            final Tuple2<Seq<String>, String> code = CodeGen.getPreambleAndExpression(map);
+            assertAll(
+                () -> assertEquals(
+                    "    final Map eHashMap0 = new HashMap();" +
+                        "    eHashMap0.put(\"a\", \"aa\");" +
+                        "    eHashMap0.put(\"b\", \"bb\");" +
+                        "    eHashMap0.put(\"c\", \"cc\");",
+                    code.v1.collect(Collectors.joining())
+                ),
+                () -> assertEquals("eHashMap0", code.v2)
+            );
+        }
+
+        @Test
+        public void getPreambleAndExpression_map_objects() {
+            // TreeMap to preserve ordering
+            final Map<Pair<String, String>, Pair<String, String>> map = new TreeMap<>();
+            map.put(new Pair<>("a", "aa"), new Pair<>("aaa", "aaaa"));
+            map.put(new Pair<>("b", "bb"), new Pair<>("bbb", "bbbb"));
+            map.put(new Pair<>("c", "cc"), new Pair<>("ccc", "cccc"));
+
+            final Tuple2<Seq<String>, String> code = CodeGen.getPreambleAndExpression(map);
+            assertAll(
+                () -> assertEquals(
+                    "    final Map eTreeMap0 = new HashMap();" +
+                        "    final au.leighperry.jdkext.codegen.CodeGenTest.Pair ePair1 = new au.leighperry.jdkext.codegen.CodeGenTest.Pair();" +
+                        "    ePair1.setT0(\"a\");" +
+                        "    ePair1.setT1(\"aa\");" +
+                        "    final au.leighperry.jdkext.codegen.CodeGenTest.Pair ePair2 = new au.leighperry.jdkext.codegen.CodeGenTest.Pair();" +
+                        "    ePair2.setT0(\"aaa\");" +
+                        "    ePair2.setT1(\"aaaa\");" +
+                        "    eTreeMap0.put(ePair1, ePair2);" +
+                        "    final au.leighperry.jdkext.codegen.CodeGenTest.Pair ePair3 = new au.leighperry.jdkext.codegen.CodeGenTest.Pair();" +
+                        "    ePair3.setT0(\"b\");" +
+                        "    ePair3.setT1(\"bb\");" +
+                        "    final au.leighperry.jdkext.codegen.CodeGenTest.Pair ePair4 = new au.leighperry.jdkext.codegen.CodeGenTest.Pair();" +
+                        "    ePair4.setT0(\"bbb\");" +
+                        "    ePair4.setT1(\"bbbb\");" +
+                        "    eTreeMap0.put(ePair3, ePair4);" +
+                        "    final au.leighperry.jdkext.codegen.CodeGenTest.Pair ePair5 = new au.leighperry.jdkext.codegen.CodeGenTest.Pair();" +
+                        "    ePair5.setT0(\"c\");" +
+                        "    ePair5.setT1(\"cc\");" +
+                        "    final au.leighperry.jdkext.codegen.CodeGenTest.Pair ePair6 = new au.leighperry.jdkext.codegen.CodeGenTest.Pair();" +
+                        "    ePair6.setT0(\"ccc\");" +
+                        "    ePair6.setT1(\"cccc\");" +
+                        "    eTreeMap0.put(ePair5, ePair6);",
+                    code.v1.collect(Collectors.joining())
+                ),
+                () -> assertEquals("eTreeMap0", code.v2)
+            );
+        }
     }
 
-    static class Pair<T0, T1> {
+    static class Pair<T0 extends Comparable<T0>, T1 extends Comparable<T1>> implements Comparable<Pair<T0, T1>> {
         T0 t0;
         T1 t1;
 
@@ -174,8 +238,15 @@ public class CodeGenTest {
             this.t1 = t1;
         }
 
-        public static <T0, T1> Pair<T0, T1> of(final T0 e0, final T1 e1) {
-            return new Pair<>(e0, e1);
+        public final Comparator<Pair<T0, T1>> COMPARATOR =
+            Comparator
+                .comparing((Function<Pair<T0, T1>, T0>) Pair::getT0)
+                .thenComparing(Pair::getT1);
+
+
+        @Override
+        public int compareTo(Pair<T0, T1> rhs) {
+            return COMPARATOR.compare(this, rhs);
         }
     }
 
@@ -184,7 +255,7 @@ public class CodeGenTest {
     class ObjectExpressions {
         @Test
         public void getPreambleAndExpression_object() {
-            final Tuple2<Seq<String>, String> code = CodeGen.getPreambleAndExpression(Pair.of(1234, "string0"));
+            final Tuple2<Seq<String>, String> code = CodeGen.getPreambleAndExpression(new Pair<>(1234, "string0"));
             assertAll(
                 () -> assertEquals(
                     "    final au.leighperry.jdkext.codegen.CodeGenTest.Pair ePair0 = new au.leighperry.jdkext.codegen.CodeGenTest.Pair();" +
@@ -200,13 +271,7 @@ public class CodeGenTest {
         public void getPreambleAndExpression_object_nested() {
             final Tuple2<Seq<String>, String> code =
                 CodeGen.getPreambleAndExpression(
-                    Pair.of(
-                        Pair.of(
-                            Pair.of(1234, "string0"),
-                            "string1"
-                        ),
-                        "string2"
-                    )
+                    new Pair<>(new Pair<>(new Pair<>(1234, "string0"), "string1"), "string2")
                 );
             assertAll(
                 () -> assertEquals(
