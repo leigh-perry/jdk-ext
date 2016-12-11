@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.jooq.lambda.Seq.seq;
@@ -64,29 +65,22 @@ public class CodeGen {
         final String objectVariableName = getObjectVariableName(o);
 
         if (o instanceof List) {
-            final List<?> listObject = (List<?>) o;
+            // Avoid private Arrays.asList()
+            final String listTypeName = typeName.equals("java.util.Arrays.ArrayList") ? "java.util.ArrayList" : typeName;
 
-            final String listInstantiation = String.format("    final List %s = new ArrayList();", objectVariableName);
+            final String listInstantiation = String.format("    final List %s = new %s();", objectVariableName, listTypeName);
+            return getCollectionPreambleAndExpression((List<?>) o, objectVariableName, listInstantiation);
+        }
 
-            // Generate the code for each item in the list
-            final Seq<String> listInitialisation =
-                seq(listObject)
-                    .map(CodeGen::getPreambleAndExpression)
-                    .flatMap(
-                        // preamble code for each list item plus adding to the generated list
-                        preambleAndExpression ->
-                            seq(preambleAndExpression.v1)
-                                .append(String.format("    %s.add(%s);", objectVariableName, preambleAndExpression.v2))
-                    )
-                    .prepend(listInstantiation);
-
-            return tuple(listInitialisation, objectVariableName);
+        if (o instanceof Set) {
+            final String setInstantiation = String.format("    final Set %s = new %s();", objectVariableName, typeName);
+            return getCollectionPreambleAndExpression((Set<?>) o, objectVariableName, setInstantiation);
         }
 
         if (o instanceof Map) {
             final Map<?, ?> mapObject = (Map<?, ?>) o;
 
-            final String mapKeyInstantiation = String.format("    final Map %s = new HashMap();", objectVariableName);
+            final String mapKeyInstantiation = String.format("    final Map %s = new %s();", objectVariableName, typeName);
 
             // Generate the code for each item in the map
             final Seq<String> mapKeyInitialisation =
@@ -140,6 +134,26 @@ public class CodeGen {
                 .prepend(String.format("    final %s %s = new %s();", typeName, objectVariableName, typeName));
 
         return tuple(preamble, objectVariableName);
+    }
+
+    private static Tuple2<Seq<String>, String> getCollectionPreambleAndExpression(
+        final Iterable<?> collection,
+        final String objectVariableName,
+        final String listInstantiation
+    ) {
+        // Generate the code for each item in the list
+        final Seq<String> listInitialisation =
+            seq(collection)
+                .map(CodeGen::getPreambleAndExpression)
+                .flatMap(
+                    // preamble code for each list item plus adding to the generated list
+                    preambleAndExpression ->
+                        seq(preambleAndExpression.v1)
+                            .append(String.format("    %s.add(%s);", objectVariableName, preambleAndExpression.v2))
+                )
+                .prepend(listInstantiation);
+
+        return tuple(listInitialisation, objectVariableName);
     }
 
     private static boolean isSimpleType(final String typeName, final Object value) {
